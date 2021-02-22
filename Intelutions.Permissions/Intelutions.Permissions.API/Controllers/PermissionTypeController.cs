@@ -7,31 +7,29 @@
 namespace Intelutions.Permissions.API.Controllers
 {
     using AutoMapper;
-    using Intelutions.Permissions.API.Contexts;
     using Intelutions.Permissions.API.Contexts.DataModels;
     using Intelutions.Permissions.API.Contracts.Requests;
     using Intelutions.Permissions.API.Contracts.Responses;
+    using Intelutions.Permissions.API.Services;
     using Microsoft.AspNetCore.Mvc;
-    using Microsoft.EntityFrameworkCore;
     using System.Collections.Generic;
-    using System.Linq;
     using System.Threading.Tasks;
 
     [ApiController]
     [Route("api/v1/[controller]")]
     public class PermissionTypeController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IPermissionTypeService _permissionTypeService;
         private readonly IMapper _mapper;
 
         /// <summary>
         /// Crea una instancia de la clase <see cref="PermissionTypeController"/>.
         /// </summary>
-        /// <param name="context">Contexto de la base de datos de la aplicación.</param>
+        /// <param name="permissionTypeService">Servicio para la gestión de tipos de permisos.</param>
         /// <param name="mapper">Mapeador de clases.</param>
-        public PermissionTypeController(ApplicationDbContext context, IMapper mapper)
+        public PermissionTypeController(IPermissionTypeService permissionTypeService, IMapper mapper)
         {
-            _context = context;
+            _permissionTypeService = permissionTypeService;
             _mapper = mapper;
         }
 
@@ -46,11 +44,9 @@ namespace Intelutions.Permissions.API.Controllers
         public async Task<ActionResult> CreateAsync([FromBody] PermissionTypeRequest request)
         {
             var permissionType = _mapper.Map<PermissionType>(request);
+            var ePermissionType = await _permissionTypeService.Create(permissionType);
 
-            _context.PermissionTypes.Add(permissionType);
-            _context.SaveChanges();
-
-            var response = _mapper.Map<PermissionTypeResponse>(permissionType);
+            var response = _mapper.Map<PermissionTypeResponse>(ePermissionType);
 
             return AcceptedAtAction("GetPermissionTypeById", new { id = permissionType.PermissionTypeId }, response);
         }
@@ -68,20 +64,16 @@ namespace Intelutions.Permissions.API.Controllers
         [HttpPut("{id}")]
         public async Task<ActionResult> UpdateAsync(int id, [FromBody] PermissionTypeRequest request)
         {
-            var permissionType = await _context.PermissionTypes.SingleOrDefaultAsync(p => p.PermissionTypeId == id);
+            var permissionType = _mapper.Map<PermissionType>(request);
+            var updated = await _permissionTypeService.Update(id, permissionType);
 
-            if (permissionType is null)
+            if (!updated)
             {
                 return NotFound(new
                 {
                     message = "El tipo de permiso ha actualizar no se existe"
                 });
             }
-
-            permissionType.Description = request.Description;
-
-            _context.PermissionTypes.Update(permissionType);
-            await _context.SaveChangesAsync();
 
             var response = _mapper.Map<PermissionTypeResponse>(permissionType);
 
@@ -100,18 +92,15 @@ namespace Intelutions.Permissions.API.Controllers
         [HttpDelete("{id}")]
         public async Task<ActionResult> DeleteAsync(int id)
         {
-            var permissionType = await _context.PermissionTypes.SingleOrDefaultAsync(p => p.PermissionTypeId == id);
+            var deleted = await _permissionTypeService.Delete(id);
 
-            if (permissionType is null)
+            if (!deleted)
             {
                 return NotFound(new
                 {
                     message = "El tipo de permiso ha eliminar no se existe"
                 });
             }
-
-            _context.PermissionTypes.Remove(permissionType);
-            await _context.SaveChangesAsync();
 
             return Ok(new
             {
@@ -131,13 +120,12 @@ namespace Intelutions.Permissions.API.Controllers
         [HttpGet("{id}", Name = "GetPermissionTypeById")]
         public async Task<ActionResult<PermissionTypeResponse>> GetPermissionById(int id)
         {
-            var permissionType = await _context.PermissionTypes.SingleOrDefaultAsync(p => p.PermissionTypeId == id);
-
+            var permissionType = await _permissionTypeService.Get(id);
             if (permissionType is null)
             {
                 return NotFound(new
                 {
-                    message = "El tipo de permiso ha eliminar no se existe"
+                    message = "El tipo de permiso ha eliminar no existe"
                 });
             }
 
@@ -153,12 +141,8 @@ namespace Intelutions.Permissions.API.Controllers
         [HttpGet]
         public async Task<ActionResult<PaginatedItems<PermissionTypeResponse>>> GetAsync([FromQuery] int pageSize = 100, [FromQuery] int pageIndex = 0)
         {
-            List<PermissionType> permissionTypes = await _context.PermissionTypes
-                .Skip(pageSize * pageIndex)
-                .Take(pageSize)
-                .ToListAsync();
-
-            var totalItems = await _context.PermissionTypes.LongCountAsync();
+            var permissionTypes = await _permissionTypeService.GetAll(pageSize, pageIndex);
+            var totalItems = await _permissionTypeService.GetCount();
             var itemsOnPage = _mapper.Map<List<PermissionType>, List<PermissionTypeResponse>>(permissionTypes);
             var paginatedItems = new PaginatedItems<PermissionTypeResponse>(pageIndex, pageSize, totalItems, itemsOnPage);
 

@@ -20,7 +20,7 @@
         name: 'HeaderBarLinks',
         data() {
             return {
-                github: 'https://github.com/apedrozo/intelutions-webapp',
+                github: 'https://github.com/apedrozo/intelutions',
                 twitter: 'https://twitter.com/apedrozoc'
             };
         },

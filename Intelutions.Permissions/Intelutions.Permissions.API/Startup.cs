@@ -8,8 +8,10 @@ namespace Intelutions.Permissions.API
 {
     using FluentValidation;
     using FluentValidation.AspNetCore;
+    using Intelutions.Permissions.API.Contexts.Repositories;
     using Intelutions.Permissions.API.Contracts.Requests;
     using Intelutions.Permissions.API.Contracts.Validators;
+    using Intelutions.Permissions.API.Services;
     using Intelutions.Permissions.API.Utils;
     using Microsoft.AspNetCore.Builder;
     using Microsoft.AspNetCore.Hosting;
@@ -56,6 +58,10 @@ namespace Intelutions.Permissions.API
 
             services.AddTransient<IValidator<PermissionRequest>, PermissionRequestValidator>();
             services.AddTransient<IValidator<PermissionTypeRequest>, PermissionTypeRequestValidator>();
+            services.AddTransient<IPermissionRepository, PermissionRepository>();
+            services.AddTransient<IPermissionTypeRepository, PermissionTypeRepository>();
+            services.AddTransient<IPermissionService, PermissionService>();
+            services.AddTransient<IPermissionTypeService, PermissionTypeService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

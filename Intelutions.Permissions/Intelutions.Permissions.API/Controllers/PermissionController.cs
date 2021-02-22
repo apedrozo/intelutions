@@ -50,7 +50,7 @@ namespace Intelutions.Permissions.API.Controllers
             {
                 return NotFound(new
                 {
-                    message = "El tipo de permiso no se existe"
+                    message = "El tipo de permiso no existe"
                 });
             }
 
